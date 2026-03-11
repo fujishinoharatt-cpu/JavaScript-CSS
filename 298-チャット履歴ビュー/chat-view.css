@@ -1,0 +1,251 @@
+@charset "UTF-8";
+
+/* コンテナ内の全ての要素に box-sizing を適用 */
+.kintone-chat-container * {
+    box-sizing: border-box;
+}
+
+/* コンテナ全体 (Flex rowにして3列に分ける) */
+.kintone-chat-container {
+    background-color: #f5f5f5;
+    height: 70vh;
+    min-height: 600px;
+    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    border: 1px solid #ddd;
+    
+    /* 画面いっぱいに広げる */
+    width: 100%; 
+    margin: 0 auto;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+    /* Layout変更: 横並び */
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    padding: 0;
+}
+
+/* =========================================================
+   共通: カラム設定
+   ========================================================= */
+.chat-column {
+    flex: 1; /* 3等分 */
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #ccc;
+    background-color: #7297c4; /* LINE背景色 */
+    min-width: 300px;
+}
+.chat-column:last-child {
+    border-right: none;
+}
+
+/* カラムごとの微調整 */
+.column-history {
+    /* チャット履歴 (左) */
+}
+.column-send {
+    /* 送信フォーム (中) */
+}
+.column-recurring {
+    /* 定期配信 (右) */
+}
+
+/* ヘッダーエリア */
+.chat-header-area {
+    flex: none;
+    z-index: 10;
+    background-color: #34495e; /* 濃いめのヘッダー */
+    color: #fff;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 2px 2px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chat-header-title {
+    font-size: 14px;
+}
+
+/* コンテンツエリア (スクロール) */
+.chat-body-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    background-color: transparent;
+    position: relative;
+}
+
+/* =========================================================
+   左カラム: チャット履歴
+   ========================================================= */
+/* 行（メッセージ1件分） */
+.chat-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+    max-width: 100%;
+}
+.chat-row-left {
+    align-items: flex-start;
+    margin-right: 20%;
+}
+.chat-row-right {
+    align-items: flex-end;
+    margin-left: 20%;
+}
+.chat-row-center {
+    align-items: center;
+    margin-bottom: 10px;
+}
+.chat-message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+}
+/* 吹き出し */
+.chat-bubble {
+    position: relative;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-all;
+    white-space: pre-wrap;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.chat-bubble-white {
+    background-color: #ffffff;
+    color: #000;
+    border-top-left-radius: 2px;
+}
+.chat-bubble-green {
+    background-color: #8de055;
+    color: #000;
+    border-top-right-radius: 2px;
+}
+/* 画像 */
+.chat-bubble img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    display: block;
+}
+.chat-sender-info {
+    font-size: 11px;
+    color: #fff;
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+.chat-time-label {
+    font-size: 10px;
+    color: #eee;
+    margin-bottom: 2px;
+    white-space: nowrap;
+}
+.chat-date-divider {
+    text-align: center;
+    margin: 20px 0;
+}
+.chat-date-label {
+    display: inline-block;
+    background-color: rgba(0,0,0,0.2);
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 10px;
+}
+
+/* =========================================================
+   中カラム: 送信フォーム
+   ========================================================= */
+.chat-input-area {
+    background-color: #fff;
+    padding: 15px;
+    border-top: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.chat-input-textarea {
+    width: 100%;
+    height: 80px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: vertical;
+    font-size: 14px;
+}
+.chat-input-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chat-attach-btn {
+    /* クリップアイコンなど */
+    cursor: pointer;
+    font-size: 20px;
+    color: #666;
+}
+.chat-send-btn {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.chat-send-btn:hover {
+    background-color: #0069d9;
+}
+
+/* =========================================================
+   右カラム: 定期配信リスト
+   ========================================================= */
+.recurring-item {
+    background-color: #fff;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.recurring-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 5px;
+}
+.recurring-status {
+    font-weight: bold;
+    color: #28a745;
+}
+.recurring-body {
+    font-size: 14px;
+    color: #333;
+    white-space: pre-wrap;
+}
+.recurring-next {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #007bff;
+    text-align: right;
+}
+
+/* スクロールバー装飾 */
+.chat-body-area::-webkit-scrollbar {
+    width: 8px;
+}
+.chat-body-area::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+}
+.chat-body-area::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 4px;
+}
+.chat-body-area::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.4);
+}

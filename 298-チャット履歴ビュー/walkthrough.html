@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kintone Chat View Walkthrough</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-left: 5px solid #7297c4;
+            padding-left: 10px;
+        }
+        h3 {
+            color: #2980b9;
+            margin-top: 20px;
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 8px;
+        }
+        code {
+            background-color: #eee;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+        }
+        strong {
+            color: #e74c3c;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kintone Chat View Walkthrough</h1>
+        <p>KintoneのレコードをLINE風のチャット形式で表示するカスタマイズビューの実装が完了しました。</p>
+
+        <h2>実装された機能</h2>
+
+        <h3>1. チャット表示 (Chat UI)</h3>
+        <ul>
+            <li><strong>LINE風デザイン</strong>: ユーザー（左側・白吹き出し）とBot/自分（右側・緑吹き出し）を左右に配置。</li>
+            <li><strong>日付区切り</strong>: 日付が変わるタイミングで「2026/01/21 (水)」のようなヘッダーを表示し、文脈を分かりやすくしました。</li>
+            <li><strong>レスポンシブ対応</strong>: 画面サイズに合わせて吹き出しやマージンが調整されます。</li>
+            <li><strong>スクロール</strong>: メッセージリストのみがスクロールし、ヘッダーは固定されます。</li>
+        </ul>
+
+        <h3>2. データ取得 (Data Fetching)</h3>
+        <ul>
+            <li><strong>全件取得</strong>: 500件の上限を超えても、再帰的にすべてのレコードを取得します。</li>
+            <li><strong>自動ソート</strong>: 取得時はレコードID（登録順）で確実に取得し、表示時に「日時 (<code>timestamp</code>)」順に並び替えます。</li>
+        </ul>
+
+        <h3>3. ユーザーフィルタ (User Filter)</h3>
+        <ul>
+            <li><strong>自動抽出</strong>: チャット履歴からユニークな「ユーザー名」を抽出し、ドロップダウンリストを自動生成します。</li>
+            <li><strong>検索性</strong>: ユーザー名はあいうえお順にソートされます。</li>
+            <li><strong>ステータス表示</strong>: 現在の「総メッセージ数」と「検出されたユーザー数」をヘッダーに表示します。</li>
+        </ul>
+
+        <h3>4. 視認性向上 (Visibility)</h3>
+        <ul>
+            <li><strong>フォントサイズ</strong>: メッセージ、名前、日時など全体の文字サイズを大きく調整し、読みやすさを向上させました。</li>
+            <li><strong>スクロールバー</strong>: コントラストを高めたデザインに変更し、スクロール位置を把握しやすくしました。</li>
+        </ul>
+
+        <h2>主要ファイル</h2>
+        <ul>
+            <li><strong>src/chat-view.js</strong>: データ取得、フィルタリング、DOM描画のロジック。</li>
+            <li><strong>src/chat-view.css</strong>: Flexboxレイアウト、吹き出しのスタイル、スクロールバーのカスタマイズ。</li>
+        </ul>
+
+        <h2>今後の拡張性</h2>
+        <ul>
+            <li><strong>画像表示</strong>: 現在はテキストのみですが、画像のフィールドコードを追加することで画像表示も可能です。</li>
+            <li><strong>既読/未読</strong>: Kintoneのステータス管理と連携させることも考えられます。</li>
+        </ul>
+    </div>
+</body>
+</html>

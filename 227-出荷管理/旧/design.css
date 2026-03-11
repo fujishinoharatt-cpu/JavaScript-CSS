@@ -1,0 +1,211 @@
+
+/*タイトルバー*/
+.gaia-argoui-app-titlebar {
+    background-color: #c9e6f7;
+}
+
+/*保存ボタン行*/
+.gaia-argoui-app-edit-buttons {
+    background: linear-gradient(90deg, #e9fcfc, #78f7f7);
+}
+
+/*画面全体*/
+#record-gaia {
+    background: linear-gradient(90deg, #c4fad6, #83e4a2);;
+}
+
+/*フォーム配置領域*/
+.layout-gaia.editablelayout-gaia {
+    background-color: #dff5e6;
+}
+
+@keyframes blink-bg {
+    0% {
+        background-color: #3498db; /* 開始時の背景色 */
+    }
+    50% {
+        background-color: #a0d6f8; /* 点滅時の背景色 */
+    }
+    100% {
+        background-color: #3498db; /* 終了時の背景色 */
+    }
+}
+
+/*保存ボタン*/
+.gaia-ui-actionmenu-save {
+    font-weight:900;
+    animation: blink-bg 2s ease infinite; /* アニメーションの設定 */
+}
+
+/*すべてのラベル*/
+.control-label-gaia {
+    border-left: 5px solid #e6d604;
+    background-color: #dff5e6;
+}
+
+/*すべてのフォームラベル*/
+.row-gaia .control-gaia.control-label-field-gaia {
+    position: relative;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.22);
+    padding: 0.5em 0.7em;
+    margin: 2em 0;
+    background-color: #ffe2d6;
+}
+
+.row-gaia .control-gaia.control-label-field-gaia:after {
+    position: absolute;
+    content: '';
+    top: 100%;
+    left: 30px;
+    border: 15px solid transparent;
+    border-top: 15px solid #ffe2d6;
+    width: 0;
+    height: 0;
+}
+
+/*区分*/
+.label-8224234 {
+    font-size: 16px;
+    font-weight:900;
+} 
+.value-8224234 .gaia-argoui-select {
+    font-size:16px;
+    font-weight:900;
+    color: #0066ff;
+}
+
+/*方面*/
+.label-8224237 {
+    font-size:16px;
+    font-weight:900;
+}
+
+.value-8224237 .gaia-argoui-select {
+    font-size:16px;
+    font-weight:900;
+    color: #FF0000; /* 変更したい文字色をカラーコードまたはカラー名で指定 */
+}
+
+/*才数1*/
+.label-8224260 {
+    font-size:16px;
+    font-weight:900;
+    color: #ff0000;
+}
+
+.value-8224260 .input-text-cybozu.input-number-cybozu {
+    font-size:16px;
+    font-weight:900;
+    color:#ff0000;
+}
+
+/*才数2*/
+.label-8224261 {
+    font-size:16px;
+    font-weight:900;
+    color: #ff0000;
+}
+
+.value-8224261 .input-text-cybozu.input-number-cybozu {
+    font-size:16px;
+    font-weight:900;
+    color: #ff0000;
+}
+
+/*個数*/
+.label-8224262 {
+    font-size:16px;
+    font-weight:900;
+    color: #0066ff;
+}
+
+.value-8224262 .input-text-cybozu.input-number-cybozu {
+    font-size:16px;
+    font-weight:900;
+    color: #0066ff;
+}
+
+/*出荷数*/
+.label-8224263 {
+    font-size:16px;
+    font-weight:900;
+    color: #8400ff;
+}
+
+.value-8224263 .input-text-cybozu.input-number-cybozu {
+    font-size:16px;
+    font-weight:900;
+    color: #8400ff;
+}
+
+/*才数合計*/
+.label-8224264 {
+    font-size:24px;
+    font-weight:900;
+    color: #ff0000;
+}
+
+.value-8224264 .input-text-cybozu.input-number-cybozu {
+    font-size:24px;
+    font-weight:900;
+    color: #ff0000;
+}
+
+/*出荷日*/
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0); /* 通常の位置に戻る */
+    }
+    50% {
+        transform: translateY(-5px); /* 上に跳ね上がり、少し大きくなる */
+    }
+}
+
+.label-8224228 {
+    font-weight:900;
+    animation: bounce 1s ease infinite; /* アニメーションの設定 */
+}
+
+.value-8224228 .input-date-text-cybozu { /*日付*/
+    font-weight:900;
+}
+
+.value-8224228 .input-time-text-cybozu { /*時間*/
+    font-weight:900;
+}
+
+/*納品日*/
+.label-8224386 {
+    font-weight:900;
+    animation: bounce 1s ease infinite; /* アニメーションの設定 */
+}
+
+.value-8224386 .input-date-text-cybozu {
+    font-weight:900;
+}
+
+.value-8224386 .input-time-text-cybozu {
+    font-weight:900;
+}
+
+/*備考*/
+@keyframes rotateAnimation {
+    from {
+        transform: rotate(0deg); /* 開始時の回転角度 */
+    }
+    to {
+        transform: rotate(360deg); /* 終了時の回転角度 */
+    }
+}
+
+.label-8224222 {
+    display: inline-block; /* 文字を要素として扱えるようにする */
+    animation: rotateAnimation 2s ease infinite;
+}
+
+/*表示*/
+.label-8224223 {
+    display: inline-block;
+    animation: rotateAnimation 2s ease infinite;
+
+}
