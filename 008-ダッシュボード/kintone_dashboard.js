@@ -1,15 +1,13 @@
-// Ver.1.1.4 - 008-ダッシュボード (Project Renamed)
+/* Ver.2.4.1 - 008-ダッシュボード (Logic & Layout Fix) */
 (function() {
     'use strict';
 
-    // ==========================================
-    // 設定値
-    // ==========================================
     const CREATOR_FIELD = '作成者';
-    const CREATED_FIELD = '作成日時';
-    const REASON_FIELD = '来店'; // 来館のキッカケ(DROP_DOWN)
+    const DATE_FIELD = '作成日時';
+    const REASON_FIELD = '来店';
+    const AI_PROXY_URL = 'https://script.google.com/macros/s/AKfycbwGaRG9gmMc1FUKvzZfF_xw46kSZ75FZfEQEg43W-T07LXvkJVmSXxLfTw1en7NE5X_tA/exec';
 
-    let allFetchedRecords = []; // 初回に全件取得したデータを保持する変数
+    let allFetchedRecords = [];
 
     kintone.events.on('app.record.index.show', function(event) {
         if (document.getElementById('show-dashboard-008-btn')) return event;
@@ -26,404 +24,410 @@
         
         const btn = document.createElement('button');
         btn.id = 'show-dashboard-008-btn';
-        btn.innerHTML = '📊 作成者ダッシュボード';
+        btn.innerHTML = '📊 来場者分析ダッシュボード';
         btn.style.margin = '10px'; btn.style.padding = '8px 16px';
         btn.style.backgroundColor = '#8e2de2'; btn.style.color = 'white';
         btn.style.border = 'none'; btn.style.borderRadius = '4px';
         btn.style.cursor = 'pointer'; btn.style.fontWeight = 'bold';
-        btn.style.transition = 'opacity 0.2s';
-        btn.onmouseover = () => btn.style.opacity = '0.8';
-        btn.onmouseout = () => btn.style.opacity = '1';
+
+        btn.onclick = async () => {
+            createDashboardContainer();
+            if (allFetchedRecords.length === 0) {
+                allFetchedRecords = await fetchAllRecords();
+            }
+            renderDashboardBase();
+            updateDashboardData('ALL');
+        };
+        menuSpace.appendChild(btn);
+
+        return event;
+    });
+
+    function createDashboardContainer() {
+        const oldOverlay = document.getElementById('dashboard-overlay-008');
+        if (oldOverlay) oldOverlay.remove();
 
         const overlay = document.createElement('div');
         overlay.id = 'dashboard-overlay-008';
+        overlay.style.display = 'flex';
         
         const modal = document.createElement('div');
         modal.id = 'dashboard-modal-008';
         
         modal.innerHTML = `
             <div class="dashboard-008-header">
-                <div class="dashboard-008-title">📊 登録推移ダッシュボード (作成者・来店キッカケ)</div>
+                <div class="dashboard-008-title">📊 来場者登録統計 (ロジック修正版)</div>
                 <button class="dashboard-008-close" id="close-dashboard-008">&times;</button>
             </div>
-            
             <div id="dashboard-008-content">
-                <div class="dashboard-008-loading">
-                    <div class="dashboard-008-spinner"></div>
-                    <div>全件データを集計中...</div>
+                <div class="dashboard-008-loading" style="text-align:center; padding:100px 0;">
+                    <div class="dashboard-008-spinner" style="margin: 0 auto 20px;"></div>
+                    <div style="color: #00d2ff; font-weight: bold;">データを集計中...</div>
                 </div>
             </div>
-            <div style="text-align:right; margin-top:15px; font-size:10px; opacity:0.4;">Ver.1.1.4</div>
+            <div style="text-align:right; margin-top:15px; font-size:10px; opacity:0.4; color:white;">Ver.2.4.1</div>
         `;
 
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
+        document.getElementById('close-dashboard-008').onclick = () => overlay.style.display = 'none';
 
-        const loadChartJs = () => {
-            return new Promise((resolve, reject) => {
-                if (typeof Chart !== 'undefined') { resolve(); return; }
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-                script.onload = resolve;
-                script.onerror = () => reject(new Error('Chart.jsの読み込みに失敗しました'));
-                document.head.appendChild(script);
-            });
-        };
-
-        btn.onclick = async function() {
-            overlay.style.display = 'flex';
-            
-            // 初回表示時のみデータ取得
-            if (!window.kintoneDashboard008DataLoaded) {
-                try {
-                    await loadChartJs();
-                    
-                    document.getElementById('dashboard-008-content').innerHTML = `
-                        <div class="dashboard-008-loading">
-                            <div class="dashboard-008-spinner"></div>
-                            <div>全件データを集計中...</div>
+        if (!document.getElementById('dashboard-detail-overlay-008')) {
+            const detailOverlay = document.createElement('div');
+            detailOverlay.id = 'dashboard-detail-overlay-008';
+            detailOverlay.innerHTML = `
+                <div id="dashboard-detail-modal-008">
+                    <div class="dashboard-008-detail-header">
+                        <div class="dashboard-008-detail-title" id="dashboard-008-detail-title">詳細一覧</div>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button class="dashboard-008-ai-btn" id="dashboard-008-ai-start-btn">✨ AI傾向分析</button>
+                            <button class="dashboard-008-close" id="close-dashboard-detail-008">&times;</button>
                         </div>
-                    `;
-
-                    allFetchedRecords = await fetchAllRecords();
-                    renderDashboardBase();
-                    updateDashboardData('ALL'); // 初回は全件で描画
-                    window.kintoneDashboard008DataLoaded = true;
-                } catch (error) {
-                    console.error('Data fetch error:', error);
-                    document.getElementById('dashboard-008-content').innerHTML = `
-                        <div style="color: #ff4444; text-align: center; padding: 50px;">
-                            データの取得に失敗しました。<br>${error.message}
+                    </div>
+                    <div class="dashboard-008-detail-body">
+                        <div class="dashboard-008-ai-panel" id="dashboard-008-ai-panel">
+                            <div id="dashboard-008-ai-result" class="dashboard-008-ai-content"></div>
                         </div>
-                    `;
-                }
-            }
-        };
-
-        document.getElementById('close-dashboard-008').onclick = function() { overlay.style.display = 'none'; };
-        overlay.onclick = function(e) { if(e.target === overlay) overlay.style.display = 'none'; };
-
-        menuSpace.appendChild(btn);
-        return event;
-    });
-
-    async function fetchAllRecords() {
-        const appId = kintone.app.getId();
-        const query = 'order by 作成日時 asc';
-        const fields = [CREATOR_FIELD, CREATED_FIELD, REASON_FIELD];
-
-        const cursorRes = await kintone.api(kintone.api.url('/k/v1/records/cursor', true), 'POST', {
-            app: appId, fields: fields, query: query, size: 500
-        });
-
-        const cursorId = cursorRes.id;
-        let allRecords = [];
-        let hasMore = true;
-
-        while (hasMore) {
-            const fetchRes = await kintone.api(kintone.api.url('/k/v1/records/cursor', true), 'GET', { id: cursorId });
-            allRecords = allRecords.concat(fetchRes.records);
-            hasMore = fetchRes.next;
+                        <div id="dashboard-008-detail-table-container"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(detailOverlay);
+            document.getElementById('close-dashboard-detail-008').onclick = () => detailOverlay.style.display = 'none';
         }
-        return allRecords;
     }
 
-    /**
-     * ベースとなるHTML（フィルターバーやコンテンツ領域）を生成する
-     */
-    function renderDashboardBase() {
-        // 作成者の一覧を抽出
-        let creatorSet = new Set();
-        allFetchedRecords.forEach(r => {
-            if (r[CREATOR_FIELD] && r[CREATOR_FIELD].value) {
-                creatorSet.add(r[CREATOR_FIELD].value.name);
+    async function fetchAllRecords() {
+        let records = [];
+        let offset = 0;
+        try {
+            while (true) {
+                const resp = await kintone.api(kintone.api.url('/k/v1/records', true), 'GET', {
+                    app: kintone.app.getId(),
+                    query: `order by ${DATE_FIELD} desc limit 500 offset ${offset}`
+                });
+                records = records.concat(resp.records);
+                if (resp.records.length < 500) break;
+                offset += 500;
             }
-        });
-        let sortedCreators = Array.from(creatorSet).sort();
-        
-        let filterOptions = `<option value="ALL">すべて (全件表示)</option>`;
-        sortedCreators.forEach(c => {
-            filterOptions += `<option value="${c}">${c}</option>`;
-        });
+        } catch (e) { console.error('Fetch Error:', e); }
+        return records;
+    }
 
-        const baseHTML = `
+    function renderDashboardBase() {
+        let creators = new Set();
+        allFetchedRecords.forEach(r => {
+            let name = (r[CREATOR_FIELD] && r[CREATOR_FIELD].value) ? (r[CREATOR_FIELD].value.name || r[CREATOR_FIELD].value) : '';
+            if (name) creators.add(name);
+        });
+        let sortedCreators = Array.from(creators).sort();
+        
+        let filterOptions = `<option value="ALL">すべて (全件表示)</option>` + 
+                           sortedCreators.map(c => `<option value="${c}">${c}</option>`).join('');
+
+        document.getElementById('dashboard-008-content').innerHTML = `
             <div class="dashboard-008-filter-bar">
                 <div class="dashboard-008-filter-label">🔍 絞り込み:</div>
-                <select id="dashboard-008-creator-filter">
-                    ${filterOptions}
-                </select>
+                <select id="dashboard-008-creator-filter">${filterOptions}</select>
             </div>
             <div id="dashboard-008-dynamic-content"></div>
         `;
 
-        document.getElementById('dashboard-008-content').innerHTML = baseHTML;
-
-        // ドロップダウン変更時のイベントリスナー
-        document.getElementById('dashboard-008-creator-filter').addEventListener('change', function(e) {
-            updateDashboardData(e.target.value);
-        });
+        document.getElementById('dashboard-008-creator-filter').onchange = (e) => updateDashboardData(e.target.value);
     }
 
-    /**
-     * 選択された作成者に基づいてデータをフィルタリングし、UIとグラフを再描画する
-     */
     function updateDashboardData(selectedCreator) {
-        // --- フィルタリング処理 ---
         let targetRecords = allFetchedRecords;
         if (selectedCreator !== 'ALL') {
-            targetRecords = allFetchedRecords.filter(r => r[CREATOR_FIELD] && r[CREATOR_FIELD].value.name === selectedCreator);
+            targetRecords = allFetchedRecords.filter(r => {
+                let name = (r[CREATOR_FIELD] && r[CREATOR_FIELD].value) ? (r[CREATOR_FIELD].value.name || r[CREATOR_FIELD].value) : '';
+                return name === selectedCreator;
+            });
         }
 
-        if (targetRecords.length === 0) {
-            document.getElementById('dashboard-008-dynamic-content').innerHTML = '<div style="text-align:center; padding:50px;">該当するレコードがありません。</div>';
-            return;
+        const now = new Date();
+        let months = [];
+        for(let i=0; i<3; i++) {
+            let d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+            months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
         }
+        const displayMonths = [...months].reverse();
 
-        // --- データ集計処理 ---
-        let monthlyCreatorData = {};
-        let monthlyReasonData = {};
-        let creatorTotal = {};
-        let reasonTotal = {};
-        let monthSet = new Set();
-        
-        let currentMonthStr = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
-        let currentMonthCount = 0;
-        let currentMonthCreators = {};
-
-        // 直近3ヶ月の月文字列を計算
-        let last3MonthsStr = [];
-        let today = new Date();
-        for (let i = 0; i < 3; i++) {
-            let d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            last3MonthsStr.push(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
-        }
+        let monthlyMotive = {};
+        let monthlyStaff = {};
+        let motiveTotal = {};
+        let staffTotal = {};
+        let thisMonthCount = 0;
+        const curMonthStr = months[0];
 
         targetRecords.forEach(r => {
-            if (!r[CREATED_FIELD] || !r[CREATED_FIELD].value) return;
+            const date = r[DATE_FIELD]?.value || '';
+            const m = date.substring(0, 7);
+            const motive = r[REASON_FIELD]?.value || '不明';
+            const staff = (r[CREATOR_FIELD] && r[CREATOR_FIELD].value) ? (r[CREATOR_FIELD].value.name || r[CREATOR_FIELD].value) : '不明';
 
-            let dateStr = r[CREATED_FIELD].value;
-            let dateObj = new Date(dateStr);
-            let month = dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0');
-            
-            let creator = (r[CREATOR_FIELD] && r[CREATOR_FIELD].value) ? r[CREATOR_FIELD].value.name : '不明';
-            let reason = (r[REASON_FIELD] && r[REASON_FIELD].value) ? r[REASON_FIELD].value : '未選択';
+            if (m === curMonthStr) thisMonthCount++;
 
-            monthSet.add(month);
-            
-            // 作成者推移（グラフ用）
-            if (!monthlyCreatorData[month]) monthlyCreatorData[month] = {};
-            if (!monthlyCreatorData[month][creator]) monthlyCreatorData[month][creator] = 0;
-            monthlyCreatorData[month][creator]++;
+            if (!monthlyMotive[m]) monthlyMotive[m] = {};
+            monthlyMotive[m][motive] = (monthlyMotive[m][motive] || 0) + 1;
 
-            // 来店キッカケ推移（グラフ用）
-            if (!monthlyReasonData[month]) monthlyReasonData[month] = {};
-            if (!monthlyReasonData[month][reason]) monthlyReasonData[month][reason] = 0;
-            monthlyReasonData[month][reason]++;
+            if (!monthlyStaff[m]) monthlyStaff[m] = {};
+            monthlyStaff[m][staff] = (monthlyStaff[m][staff] || 0) + 1;
 
-            // 直近3ヶ月のランキング集計
-            if (last3MonthsStr.includes(month)) {
-                if (!creatorTotal[creator]) creatorTotal[creator] = 0;
-                creatorTotal[creator]++;
-
-                if (!reasonTotal[reason]) reasonTotal[reason] = 0;
-                reasonTotal[reason]++;
-            }
-
-            // 今月集計
-            if (month === currentMonthStr) {
-                currentMonthCount++;
-                if (!currentMonthCreators[creator]) currentMonthCreators[creator] = 0;
-                currentMonthCreators[creator]++;
+            if (months.includes(m)) {
+                motiveTotal[motive] = (motiveTotal[motive] || 0) + 1;
+                staffTotal[staff] = (staffTotal[staff] || 0) + 1;
             }
         });
 
-        let sortedMonths = Array.from(monthSet).sort();
-        let sortedCreators = Object.keys(creatorTotal).sort((a, b) => creatorTotal[b] - creatorTotal[a]);
-        let sortedReasons = Object.keys(reasonTotal).sort((a, b) => reasonTotal[b] - reasonTotal[a]);
-        
-        let mvpName = '-';
-        let mvpCount = 0;
-        Object.keys(currentMonthCreators).forEach(c => {
-            if (currentMonthCreators[c] > mvpCount) {
-                mvpCount = currentMonthCreators[c];
-                mvpName = c;
-            }
-        });
+        const sortedMotives = Object.keys(motiveTotal).sort((a,b) => motiveTotal[b] - motiveTotal[a]);
+        const sortedStaff = Object.keys(staffTotal).sort((a,b) => staffTotal[b] - staffTotal[a]);
 
-        // フィルタ時の表示テキスト調整
-        let title1 = selectedCreator === 'ALL' ? '総レコード数' : selectedCreator + 'のレコード数';
-        let title3 = selectedCreator === 'ALL' ? '🥇 今月のMVP' : '🥇 今月の登録数';
-        let displayMvp = selectedCreator === 'ALL' ? mvpName : selectedCreator;
-        
-        let displayMonths = [...last3MonthsStr].reverse();
+        const mvpName = selectedCreator === 'ALL' ? (sortedStaff[0] || '-') : selectedCreator;
+        const mvpCount = (monthlyStaff[curMonthStr] && monthlyStaff[curMonthStr][mvpName]) || 0;
 
-        // --- UI（HTML）の構築 ---
-        const contentHTML = `
+        document.getElementById('dashboard-008-dynamic-content').innerHTML = `
             <div class="dashboard-008-cards">
                 <div class="dashboard-008-card card-bg-1">
-                    <div class="dashboard-008-card-title">${title1}</div>
-                    <div class="dashboard-008-card-value">${targetRecords.length.toLocaleString()} <span style="font-size:1rem;">件</span></div>
+                    <div class="dashboard-008-card-title">総レコード数</div>
+                    <div class="dashboard-008-card-value">${targetRecords.length.toLocaleString()} 件</div>
                 </div>
                 <div class="dashboard-008-card card-bg-2">
-                    <div class="dashboard-008-card-title">今月 (${currentMonthStr}) の登録</div>
-                    <div class="dashboard-008-card-value" style="color:#00d2ff;">${currentMonthCount.toLocaleString()} <span style="font-size:1rem;">件</span></div>
+                    <div class="dashboard-008-card-title">今月の登録 (${curMonthStr})</div>
+                    <div class="dashboard-008-card-value" style="color:#00d2ff;">${thisMonthCount.toLocaleString()} 件</div>
                 </div>
                 <div class="dashboard-008-card card-bg-3">
-                    <div class="dashboard-008-card-title">${title3}</div>
-                    <div class="dashboard-008-card-value" style="color:#ffa500; font-size:1.4rem;">${displayMvp}</div>
-                    <div class="dashboard-008-card-sub">${mvpCount}件登録</div>
+                    <div class="dashboard-008-card-title">🥇 ${selectedCreator === 'ALL' ? '今月のMVP' : 'あなたの今月の登録'}</div>
+                    <div class="dashboard-008-card-value" style="color:#ffa500;">${mvpName}</div>
+                    <div class="dashboard-008-card-sub">${mvpCount} 件登録</div>
                 </div>
                 <div class="dashboard-008-card card-bg-4">
                     <div class="dashboard-008-card-title">👑 トップ来館キッカケ</div>
-                    <div class="dashboard-008-card-value" style="color:#b388ff; font-size:1.4rem;">${sortedReasons.length > 0 ? sortedReasons[0] : '-'}</div>
-                    <div class="dashboard-008-card-sub">${sortedReasons.length > 0 ? reasonTotal[sortedReasons[0]].toLocaleString() : 0}件 (直近3ヶ月)</div>
+                    <div class="dashboard-008-card-value" style="color:#b388ff;">${sortedMotives[0] || '-'}</div>
+                    <div class="dashboard-008-card-sub">${motiveTotal[sortedMotives[0]] || 0} 件 (直近3ヶ月)</div>
                 </div>
             </div>
 
-            <!-- 1段目: 来店キッカケ推移 -->
             <div class="dashboard-008-row">
-                <div class="dashboard-008-chart-container">
-                    <div style="font-size:0.9rem; margin-bottom:10px; opacity:0.8;">📈 来館キッカケ別の登録推移 (月別)</div>
-                    <div style="height: 300px; width: 100%;">
-                        <canvas id="dashboard-008-reason-chart"></canvas>
-                    </div>
-                </div>
+                <div class="dashboard-008-chart-container"><canvas id="chart-motive"></canvas></div>
                 <div class="dashboard-008-list-container">
-                    <div class="dashboard-008-list-title">🎯 来館キッカケ 直近3ヶ月の推移</div>
-                    ${sortedReasons.map((r, i) => {
-                        let countsHTML = displayMonths.map(m => {
-                            let mLabel = parseInt(m.split('-')[1]) + '月';
-                            let count = (monthlyReasonData[m] && monthlyReasonData[m][r]) ? monthlyReasonData[m][r] : 0;
-                            let isCurrent = m === currentMonthStr;
-                            return `<span style="opacity:0.6; margin-right:3px; font-size:0.75rem;">${mLabel}:</span><b style="margin-right:${isCurrent ? '0' : '10px'}; ${isCurrent ? 'color:#00d2ff;' : ''}">${count}</b>`;
-                        }).join('');
-                        return `
-                        <div class="dashboard-008-list-item" style="align-items:center;">
-                            <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:10px;">
-                                <span style="opacity:0.5; font-size:0.8rem; margin-right:8px;">${i+1}</span>
-                                <span title="${r}">${r}</span>
-                            </div>
-                            <div style="font-size:0.85rem; white-space:nowrap; display:flex; align-items:baseline;">
-                                ${countsHTML}
-                            </div>
-                        </div>
-                        `;
-                    }).join('')}
+                    <div class="dashboard-008-list-title">🎯 来場動機 直近3ヶ月の推移</div>
+                    ${renderTrendList(sortedMotives, monthlyMotive, displayMonths, REASON_FIELD)}
                 </div>
             </div>
-
-            <!-- 2段目: 作成者推移 -->
-            <div class="dashboard-008-row" id="dashboard-008-creator-row">
-                <div class="dashboard-008-chart-container">
-                    <div style="font-size:0.9rem; margin-bottom:10px; opacity:0.8;">👤 作成者別の登録推移 (月別)</div>
-                    <div style="height: 300px; width: 100%;">
-                        <canvas id="dashboard-008-creator-chart"></canvas>
-                    </div>
-                </div>
+            <div class="dashboard-008-row">
+                <div class="dashboard-008-chart-container"><canvas id="chart-staff"></canvas></div>
                 <div class="dashboard-008-list-container">
-                    <div class="dashboard-008-list-title">🏆 作成者 直近3ヶ月の推移</div>
-                    ${sortedCreators.map((c, i) => {
-                        let countsHTML = displayMonths.map(m => {
-                            let mLabel = parseInt(m.split('-')[1]) + '月';
-                            let count = (monthlyCreatorData[m] && monthlyCreatorData[m][c]) ? monthlyCreatorData[m][c] : 0;
-                            let isCurrent = m === currentMonthStr;
-                            return `<span style="opacity:0.6; margin-right:3px; font-size:0.75rem;">${mLabel}:</span><b style="margin-right:${isCurrent ? '0' : '10px'}; ${isCurrent ? 'color:#00d2ff;' : ''}">${count}</b>`;
-                        }).join('');
-                        return `
-                        <div class="dashboard-008-list-item" style="align-items:center;">
-                            <div style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:10px;">
-                                <span style="opacity:0.5; font-size:0.8rem; margin-right:8px;">${i+1}</span>
-                                <span title="${c}">${c}</span>
-                            </div>
-                            <div style="font-size:0.85rem; white-space:nowrap; display:flex; align-items:baseline;">
-                                ${countsHTML}
-                            </div>
-                        </div>
-                        `;
-                    }).join('')}
+                    <div class="dashboard-008-list-title">🏆 担当者 直近3ヶ月の推移</div>
+                    ${renderTrendList(sortedStaff, monthlyStaff, displayMonths, CREATOR_FIELD)}
                 </div>
             </div>
         `;
 
-        document.getElementById('dashboard-008-dynamic-content').innerHTML = contentHTML;
+        drawStackedChart('chart-motive', monthlyMotive, sortedMotives.slice(0, 10));
+        drawStackedChart('chart-staff', monthlyStaff, sortedStaff.slice(0, 10));
 
-        // もし特定の作成者で絞り込んでいる場合は「作成者推移グラフ」は単色になって意味が薄いため非表示（任意）
-        // でも今回は表示しておく。1本だけのグラフとして表示される。
-        
-        drawChart('dashboard-008-reason-chart', sortedMonths, sortedReasons, monthlyReasonData);
-        drawChart('dashboard-008-creator-chart', sortedMonths, sortedCreators, monthlyCreatorData);
-    }
-
-    /**
-     * 共通のChart.js描画関数
-     */
-    function drawChart(canvasId, sortedMonths, keys, monthlyData) {
-        const colors = [
-            'rgba(0, 210, 255, 0.8)', 'rgba(255, 165, 0, 0.8)', 'rgba(142, 45, 226, 0.8)',
-            'rgba(255, 99, 132, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(255, 206, 86, 0.8)',
-            'rgba(153, 102, 255, 0.8)', 'rgba(201, 203, 207, 0.8)', 'rgba(54, 162, 235, 0.8)'
-        ];
-
-        const topKeys = keys.slice(0, 15);
-        
-        let datasets = topKeys.map((k, index) => {
-            return {
-                label: k,
-                data: sortedMonths.map(m => (monthlyData[m] && monthlyData[m][k]) ? monthlyData[m][k] : 0),
-                backgroundColor: colors[index % colors.length],
-                stack: 'Stack 0',
-                borderRadius: 2
+        document.querySelectorAll('.dashboard-008-list-item-name').forEach(el => {
+            el.onclick = (e) => {
+                const key = el.getAttribute('data-key');
+                const field = el.getAttribute('data-field');
+                showDetailModal(key, field, targetRecords, 'RECENT_3', displayMonths);
+                e.stopPropagation();
             };
         });
 
-        if (keys.length > 15) {
-            let otherData = sortedMonths.map(m => {
-                let sum = 0;
-                for (let i = 15; i < keys.length; i++) {
-                    let k = keys[i];
-                    if (monthlyData[m] && monthlyData[m][k]) sum += monthlyData[m][k];
-                }
-                return sum;
-            });
-            datasets.push({
-                label: 'その他',
-                data: otherData,
-                backgroundColor: 'rgba(100, 100, 100, 0.6)',
-                stack: 'Stack 0',
-                borderRadius: 2
-            });
-        }
+        document.querySelectorAll('.dashboard-008-list-item-trend-value').forEach(el => {
+            el.onclick = (e) => {
+                const key = el.getAttribute('data-key');
+                const field = el.getAttribute('data-field');
+                const month = el.getAttribute('data-month');
+                showDetailModal(key, field, targetRecords, month, null);
+                e.stopPropagation();
+            };
+        });
+    }
 
+    function renderTrendList(keys, monthlyData, displayMonths, field) {
+        return keys.map((key, i) => {
+            let trends = displayMonths.map(m => {
+                let count = (monthlyData[m] && monthlyData[m][key]) || 0;
+                return `<span class="dashboard-008-list-item-trend-value" data-key="${key}" data-field="${field}" data-month="${m}" style="cursor:pointer; margin-right:8px;">
+                    <span style="opacity:0.6; font-size:0.7rem;">${m.split('-')[1]}月:</span><b style="color:#00d2ff; text-decoration:underline;">${count}</b>
+                </span>`;
+            }).join('');
+            return `
+                <div class="dashboard-008-list-item">
+                    <div class="dashboard-008-list-item-name" data-key="${key}" data-field="${field}" style="flex:1; cursor:pointer; color:#00d2ff; text-decoration:underline;">
+                        ${i+1}. ${key}
+                    </div>
+                    <div style="font-size:0.8rem;">${trends}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function drawStackedChart(canvasId, monthlyData, keys) {
         const ctx = document.getElementById(canvasId).getContext('2d');
-        if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
+        const months = Object.keys(monthlyData).sort();
+        const colors = ['#00d2ff', '#3a7bd5', '#8e2de2', '#f7971e', '#ffd200', '#ff4b2b', '#4facfe', '#00f2fe', '#f093fb', '#f5576c'];
         
+        const datasets = keys.map((k, i) => ({
+            label: k,
+            data: months.map(m => monthlyData[m][k] || 0),
+            backgroundColor: colors[i % colors.length],
+            stack: 'stack1'
+        }));
+
+        if (window[canvasId + 'Inst']) window[canvasId + 'Inst'].destroy();
         window[canvasId + 'Inst'] = new Chart(ctx, {
             type: 'bar',
-            data: {
-                labels: sortedMonths,
-                datasets: datasets
-            },
+            data: { labels: months, datasets: datasets },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { position: 'right', labels: { color: '#fff', font: { size: 10 } } },
-                    tooltip: {
-                        callbacks: {
-                            footer: (tooltipItems) => {
-                                let total = tooltipItems.reduce((a, e) => a + e.parsed.y, 0);
-                                return '合計: ' + total;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#aaa' } },
-                    y: { stacked: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#aaa' } }
-                }
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { color: 'white', font: { size: 10 } } } },
+                scales: { x: { stacked: true, ticks: { color: '#aaa' } }, y: { stacked: true, ticks: { color: '#aaa' } } }
             }
         });
     }
 
+    function showDetailModal(key, field, records, monthFilter, allRecentMonths) {
+        const detailOverlay = document.getElementById('dashboard-detail-overlay-008');
+        const titleEl = document.getElementById('dashboard-008-detail-title');
+        const tableContainer = document.getElementById('dashboard-008-detail-table-container');
+        const aiPanel = document.getElementById('dashboard-008-ai-panel');
+
+        let displayMonthLabel = monthFilter === 'RECENT_3' ? '直近3ヶ月' : (monthFilter || 'すべて');
+        const displayStaff = key; 
+        const searchKey = `${displayStaff}_${displayMonthLabel}`;
+        const cleanTitle = `${displayStaff}(${displayMonthLabel})`;
+        
+        let filtered = records.filter(r => {
+            let val = (r[field] && r[field].value) ? (r[field].value.name || r[field].value) : '';
+            return val === key;
+        });
+
+        if (monthFilter === 'RECENT_3' && allRecentMonths) {
+            filtered = filtered.filter(r => {
+                const m = r[DATE_FIELD]?.value?.substring(0, 7);
+                return allRecentMonths.includes(m);
+            });
+        } else if (monthFilter && monthFilter !== 'RECENT_3') {
+            filtered = filtered.filter(r => r[DATE_FIELD]?.value?.startsWith(monthFilter));
+        }
+
+        titleEl.innerHTML = `
+            <div style="font-weight: bold; white-space: nowrap;">${displayStaff} の詳細 (${displayMonthLabel})</div> 
+            <div style="font-size:0.8rem; opacity:0.6;">(全 ${filtered.length} 件のレコード)</div>
+        `;
+        detailOverlay.style.display = 'flex';
+        aiPanel.style.display = 'none';
+
+        tableContainer.innerHTML = `
+            <div id="dashboard-008-table-wrapper" style="height: 72vh; overflow-y: scroll; margin-top: 10px;">
+                <table class="dashboard-008-detail-table" style="width:100%; border-collapse:collapse;">
+                    <thead style="position: sticky; top: 0; background:#1e1e2e; z-index:10;">
+                        <tr style="border-bottom:2px solid #00d2ff; font-size:0.95rem;">
+                            <th style="padding:15px; width:40px;">No.</th>
+                            <th style="padding:15px; width:220px;">基本情報 (日付/客名/担当)</th>
+                            <th style="padding:15px; width:120px;">商品番</th>
+                            <th style="padding:15px;">対応内容</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filtered.map((r, i) => {
+                            const recordUrl = `/k/${kintone.app.getId()}/show#record=${r.$id.value}`;
+                            const date = (r[DATE_FIELD]?.value || '').substring(0, 10);
+                            return `
+                            <tr>
+                                <td style="padding:15px; text-align:center; font-size:0.9rem;"><a href="${recordUrl}" target="_blank" style="color:#00d2ff;">${i+1}</a></td>
+                                <td style="padding:15px; line-height:1.6; border-right: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="opacity:0.7; font-size:0.85rem;">${date}</div>
+                                    <div style="font-weight:bold; color:#fff; font-size:1.1rem; margin:3px 0;">${r.お客様名?.value || '-'}</div>
+                                    <div style="font-size:0.85rem; opacity:0.9; color:#00d2ff;">👤 ${r.接客スタッフ?.value || '-'}</div>
+                                </td>
+                                <td style="padding:15px; font-size:0.85rem; color:#aaa; text-align:center;">${r.見られた商品番?.value || '-'}</td>
+                                <td style="padding:15px; font-size:1rem; line-height:1.7; vertical-align: top;">${r.対応内容?.value || '-'}</td>
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        document.getElementById('dashboard-008-ai-start-btn').onclick = () => runAIAnalysis(cleanTitle, filtered, displayStaff, displayMonthLabel, searchKey);
+        autoCheckExistingAnalysis(cleanTitle, displayStaff, displayMonthLabel, filtered.length, searchKey);
+    }
+
+    function formatAIResult(text) {
+        if (!text) return "";
+        let cleanText = text.replace(/```html|```/g, '')
+                            .replace(/<style.*?>[\s\S]*?<\/style>/gi, '') 
+                            .replace(/<html.*?>|<\/html>|<body.*?>|<\/body>|<head.*?>[\s\S]*?<\/head>/gi, '')
+                            .trim();
+
+        let formatted = cleanText;
+        if (!/<[a-z][\s\S]*?>/i.test(cleanText)) {
+            formatted = cleanText.replace(/\n/g, '<br>');
+        }
+
+        formatted = formatted.replace(/【(.*?)】/g, '<strong style="color:#00d2ff; font-size:1.1rem; border-left:4px solid #00d2ff; padding-left:8px; margin:15px 0 10px 0; display:block;">$1</strong>');
+        formatted = formatted.replace(/([■●](.*?))(<br>|$)/g, '<b style="color:#ffcc00;">$1</b>$3');
+        
+        const style = `
+            <style>
+                .dashboard-008-ai-content h3 { color: #00d2ff; margin: 15px 0 5px 0; font-size: 1.1rem; border-bottom: 1px solid rgba(0,210,255,0.2); padding-bottom: 3px; }
+                .dashboard-008-ai-content p { margin: 0 0 10px 0; }
+                .dashboard-008-ai-content ul { margin: 0 0 10px 0; padding-left: 20px; }
+                .dashboard-008-ai-content li { margin-bottom: 5px; }
+                .dashboard-008-ai-content b, .dashboard-008-ai-content strong { color: #ffcc00; }
+            </style>
+        `;
+        return `${style}<div style="color:white !important; line-height:1.6;">${formatted}</div>`;
+    }
+
+    async function autoCheckExistingAnalysis(title, creator, month, count, searchKey) {
+        const aiResultEl = document.getElementById('dashboard-008-ai-result');
+        const aiPanel = document.getElementById('dashboard-008-ai-panel');
+        const aiBtn = document.getElementById('dashboard-008-ai-start-btn');
+        aiPanel.style.display = 'block';
+        aiResultEl.innerHTML = '<span style="font-size:0.8rem; opacity:0.5;">検索中...</span>';
+        try {
+            const resp = await fetch(AI_PROXY_URL, { method: 'POST', body: JSON.stringify({ action: 'analyze', title: title, query_key: searchKey, target_name: creator, target_period: month, recordCount: count, records: [] }) });
+            const result = await resp.json();
+            if (result.success && result.cached) {
+                aiResultEl.innerHTML = formatAIResult(result.analysis_result);
+                aiBtn.innerText = '✨ AI再分析';
+                aiBtn.style.opacity = '0.7';
+            } else {
+                aiResultEl.innerHTML = '<div style="font-size:0.8rem; opacity:0.6;">過去の分析はありません。分析を開始してください。</div>';
+                aiBtn.innerText = '✨ AI傾向分析';
+                aiBtn.style.opacity = '1';
+            }
+        } catch (e) { aiPanel.style.display = 'none'; }
+    }
+
+    async function runAIAnalysis(title, records, creator, month, searchKey) {
+        const aiResultEl = document.getElementById('dashboard-008-ai-result');
+        const aiPanel = document.getElementById('dashboard-008-ai-panel');
+        const aiBtn = document.getElementById('dashboard-008-ai-start-btn');
+        aiPanel.style.display = 'block';
+        aiBtn.disabled = true;
+        aiResultEl.innerHTML = '<div class="dashboard-008-spinner"></div> AI分析中...';
+        try {
+            const resp = await fetch(AI_PROXY_URL, { method: 'POST', body: JSON.stringify({ action: 'analyze', title: title, query_key: searchKey, target_name: creator, target_period: month, recordCount: records.length, force_refresh: true, records: records.map(r => ({'日付': r[DATE_FIELD]?.value || '', '接客スタッフ': r.接客スタッフ?.value || '', 'お客様名': r.お客様名?.value || '', '見られた商品番': r.見られた商品番?.value || '', '来店': r[REASON_FIELD]?.value || '', '対応内容': r.対応内容?.value || '', '見積金額': r.見積金額?.value ? parseInt(r.見積金額.value).toLocaleString() + '円' : '0円' })) }) });
+            const result = await resp.json();
+            if (result.success) {
+                aiResultEl.innerHTML = formatAIResult(result.analysis_result);
+                aiBtn.innerText = '✨ AI再分析';
+            } else {
+                aiResultEl.innerHTML = `エラー: ${result.error}`;
+            }
+        } catch (e) { aiResultEl.innerHTML = `エラー: ${e.message}`; } finally { aiBtn.disabled = false; }
+    }
+
+    if (typeof Chart === 'undefined') {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        document.head.appendChild(s);
+    }
 })();
